@@ -14,20 +14,20 @@ Incluye validaciones de negocio, control de concurrencia y autenticación median
 ## Instalción
 
 1. Clonar repositorio
-`git clone https://github.com/TU_USUARIO/events-api.git`
+`git clone https://github.com/AzaGimma-bits/events-api.git`
 `cd events-api`
 
 1. Instalar dependencias
    `composer install`
 
 2. Configurar entorno
-   Editar .env:
-   DB_CONNECTION=mysql 
-   DB_HOST=127.0.0.1 
-   DB_PORT=3307 
-   DB_DATABASE=laravel_api_test 
-   DB_USERNAME=root 
-   DB_PASSWORD=
+   ###### Editar .env:
+- DB_CONNECTION=mysql 
+- DB_HOST=127.0.0.1 
+- DB_PORT=3307 
+- DB_DATABASE=laravel_api_test 
+- DB_USERNAME=root 
+- DB_PASSWORD=
 
 3. Generar clave
    `php artisan key:generate`
