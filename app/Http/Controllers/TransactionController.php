@@ -17,57 +17,67 @@ class TransactionController extends Controller
             'amount' => 'required|numeric|min:0.01',
         ]);
 
+        //debido al caso dos modifiqué un poco la estructura
+        return DB::transaction(function () use ($validated){
         //usuarios
-        $sender = User::find($validated['sender_id']);
-        $receiver = User::find($validated['receiver_id']);
-        $amount = $validated['amount'];
+            $sender = User::where('id', $validated['sender_id'])
+                ->lockForUpdate()
+                ->first();
+            $receiver = User::where('id', $validated['receiver_id'])
+                ->lockForUpdate()
+                ->first();
+            $amount = $validated['amount'];
 
-        //Límite diario de transferencia
-        $totalToday = Transaction::where('sender_id', $sender->id)
-            ->whereDate('created_at', now()->toDateString())
-            ->sum('amount');
-        
-            if (($totalToday + $amount) > 5000){
+            //Límite diario de transferencia
+            $totalToday = Transaction::where('sender_id', $sender->id)
+                ->whereDate('created_at', now()->toDateString())
+                ->sum('amount');
+            
+                if (($totalToday + $amount) > 5000){
+                    return response()->json([
+                        'message' => 'Límite diario excedido'
+                    ],400);
+                }
+
+            //saldo insuficiente
+            if ($sender->balance < $amount){
                 return response()->json([
-                    'message' => 'Límite diario excedido'
+                    'message' => 'Saldo insuficiente'
+                ],400);
+            }
+            //transacciones duplicadas
+            $duplicate = Transaction::where('sender_id', $sender->id)
+                ->where('receiver_id', $receiver->id)
+                ->where('amount', $amount)
+                ->where('created_at', '>=', now()->subMinutes(1))
+                ->exists();
+
+            if ($duplicate) {
+                return response()->json([
+                    'message' => 'Duplicado detectado'
                 ],400);
             }
 
-        //saldo insuficiente
-        if ($sender->balance < $amount){
-            return response()->json([
-                'message' => 'Saldo insuficiente'
-            ],400);
-        }
-        //transacciones duplicadas
-        $duplicate = Transaction::where('sender_id', $sender->id)
-            ->where('receiver_id', $receiver->id)
-            ->where('amount', $amount)
-            ->where('created_at', '>=', now()->subMinutes(1))
-            ->exists();
+            //Realizar transacción
+            DB::transaction(function() use ($sender, $receiver, $amount){
+                $sender->decrement('balance', $amount);
+                $receiver->increment('balance', $amount);
+                
+                Transaction::create([
+                    'sender_id' => $sender->id,
+                    'receiver_id' => $receiver->id,
+                    'amount' => $amount,
+                ]);
+            });
 
-        if ($duplicate) {
             return response()->json([
-                'message' => 'Duplicado detectado'
-            ],400);
-        }
-
-        //Realizar transacción
-        DB::transaction(function() use ($sender, $receiver, $amount){
-            $sender->decrement('balance', $amount);
-            $receiver->increment('balance', $amount);
-            
-            Transaction::create([
-                'sender_id' => $sender->id,
-                'receiver_id' => $receiver->id,
-                'amount' => $amount,
-            ]);
+                'message' => 'Transferencia realizada con exito'
+            ],201);
         });
 
-        return response()->json([
-            'message' => 'Transferencia realizada con exito'
-        ],201);
     }
+    
+
     //Consultas estadisticas
     public function stats(){
         $stats = Transaction::select(

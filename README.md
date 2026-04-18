@@ -90,8 +90,7 @@ Accept: application/json
 
 ###### Transacciones
 - POST /api/transactions
-- GET /api/transactions/stats
-- GET /api/transactions/my-stats
+- GET /api/transactions/stats (Total transferido y promedio del monto)
 - GET /api/transactions/export
 
 ## Reglas
@@ -104,7 +103,6 @@ Accept: application/json
 - Uso de transacciones (DB::transaction)
 - Control de concurrencia mediante lockForUpdate
 - Autenticación con Laravel Sanctum
-- Consultas optimizadas con agregaciones SQL
 - Exportación CSV con delimitador “;”
 
 ## Caso 2
